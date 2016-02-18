@@ -1,0 +1,18 @@
+language: python
+
+sudo: false
+
+python:
+ - 3.5
+ - 3.4
+ - 3.3
+ - 3.2
+ - 2.7
+ - 2.6
+ - pypy3
+ - pypy
+
+script:
+ - python setup.py install
+ - if [ $TRAVIS_PYTHON_VERSION == "3.2" ]; then 2to3 -w test/test_demjson.py; fi
+ - python setup.py test

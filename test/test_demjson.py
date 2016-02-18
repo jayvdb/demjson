@@ -43,9 +43,16 @@ try:
 except ImportError:
     decimal = None
 
+if is_python3:
+    basestring = str
+    long = int
+    unichr = chr
+
 # ====================
 
 if hasattr(unittest, 'skipUnless'):
+    def skipUnlessPython2(method):
+        return unittest.skipUnless(method, not is_python3)
     def skipUnlessPython3(method):
         return unittest.skipUnless(method, is_python3)
     def skipUnlessPython27(method):
@@ -56,19 +63,21 @@ else:
     # Python <= 2.6 does not have skip* decorators, so
     # just make a dummy decorator that always passes the
     # test method.
+    def skipUnlessPython2(method):
+        return method
     def skipUnlessPython3(method):
         def always_pass(self):
-            print "\nSKIPPING TEST %s: Requires Python 3" % method.__name__
+            print("\nSKIPPING TEST %s: Requires Python 3" % method.__name__)
             return True
         return always_pass
     def skipUnlessPython27(method):
         def always_pass(self):
-            print "\nSKIPPING TEST %s: Requires Python 2.7 or greater" % method.__name__
+            print("\nSKIPPING TEST %s: Requires Python 2.7 or greater" % method.__name__)
             return True
         return always_pass
     def skipUnlessWidePython(method):
         def always_pass(self):
-            print "\nSKIPPING TEST %s: Requires Python with wide Unicode support (maxunicode > U+FFFF)" % method.__name__
+            print("\nSKIPPING TEST %s: Requires Python with wide Unicode support (maxunicode > U+FFFF)" % method.__name__)
             return True
         return always_pass
 
@@ -176,7 +185,7 @@ class rot_one(codecs.CodecInfo):
                 chars.append( unichr(b-1) )
             elif b == ord('A'):
                 chars.append( u'Z' )
-            elif b <= 0x7fL:
+            elif b <= 127:
                 chars.append( unichr(b) )
             else:
                 raise UnicodeDecodeError('rot-1',byte_list,i,i,"Can not decode byte value 0x%02x"%b)
@@ -411,11 +420,11 @@ class DemjsonTest(unittest.TestCase):
         try:
             m = r.match( value )
         except TypeError:
-            raise self.failureException, \
-                  "can't compare non-string to regex: %r" % value
+            raise self.failureException(
+                  "can't compare non-string to regex: %r" % value)
         if m is None:
-            raise self.failureException, \
-                  (msg or '%r !~ /%s/' %(value,pattern))
+            raise self.failureException(
+                  msg or '%r !~ /%s/' %(value,pattern))
 
     def testEncodeNumber(self):
         self.assertEqual(demjson.encode(0), '0')
@@ -953,11 +962,14 @@ class DemjsonTest(unittest.TestCase):
                         if self.n < 10:
                             return 2**self.n
                         raise StopIteration
+                    __next__ = next
                 return i()
+
         mylist = LikeList()
         self.assertEqual(demjson.encode(mylist), \
                          '[2,4,8,16,32,64,128,256,512]' )
 
+    @skipUnlessPython2
     def testEncodeStringLike(self):
         import UserString
         class LikeString(UserString.UserString):
@@ -1249,12 +1261,12 @@ class DemjsonTest(unittest.TestCase):
         self.assertRaises( demjson.JSONEncodeError, demjson.encode, Anon2("Hello"), encode_default=encode_anon )
 
     def testEncodeDate(self):
-        d = datetime.date(2014,01,04)
+        d = datetime.date(2014,1,4)
         self.assertEqual(demjson.encode( d ), '"2014-01-04"' )
         self.assertEqual(demjson.encode( d, date_format='%m/%d/%Y' ), '"01/04/2014"' )
 
     def testEncodeDatetime(self):
-        d = datetime.datetime(2014,01,04,13,22,15)
+        d = datetime.datetime(2014,1,4,13,22,15)
         self.assertEqual(demjson.encode( d ), '"2014-01-04T13:22:15"' )
         self.assertEqual(demjson.encode( d, datetime_format='%m/%d/%Y %H hr %M min' ), '"01/04/2014 13 hr 22 min"' )
 
@@ -1493,9 +1505,9 @@ class DemjsonTest(unittest.TestCase):
 
 def run_all_tests():
     unicode_width = 'narrow' if sys.maxunicode<=0xFFFF else 'wide'
-    print 'Running with demjson version %s, Python version %s with %s-Unicode' % (demjson.__version__, sys.version.split(' ',1)[0],unicode_width)
+    print('Running with demjson version %s, Python version %s with %s-Unicode' % (demjson.__version__, sys.version.split(' ',1)[0],unicode_width))
     if int( demjson.__version__.split('.',1)[0] ) < 2:
-        print 'WARNING: TESTING AGAINST AN OLD VERSION!'
+        print('WARNING: TESTING AGAINST AN OLD VERSION!')
     unittest.main()
     
 if __name__ == '__main__':

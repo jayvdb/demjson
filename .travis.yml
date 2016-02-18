@@ -1,0 +1,22 @@
+language: python
+
+sudo: false
+
+python:
+ - 3.5
+ - 3.4
+ - 3.3
+ - 3.2
+ - 2.7
+ - 2.6
+ - pypy3
+ - pypy
+
+script:
+ - python setup.py install
+ - python setup.py test
+
+matrix:
+  fast_finish: true
+  allow_failures:
+   - python: pypy3
